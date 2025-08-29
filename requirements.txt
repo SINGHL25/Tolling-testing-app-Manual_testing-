@@ -6,3 +6,4 @@ openpyxl
 reportlab
 pyyaml
 pytest
+matplotlib
