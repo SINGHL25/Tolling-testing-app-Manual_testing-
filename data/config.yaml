@@ -1,1 +1,13 @@
 
+project: MLFF Tolling SAT Tests
+organization: Kapsch TrafficCom
+test_suites:
+  SAT1:
+    description: Initial inspection and power verification
+  SAT2:
+    description: Lane coverage and transactions
+  SAT3:
+    description: Monitoring, Network & Functionality
+report:
+  author: QA Team
+  format: pdf
