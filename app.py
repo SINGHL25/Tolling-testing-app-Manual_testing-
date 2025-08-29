@@ -1,51 +1,33 @@
 import streamlit as st
 import pandas as pd
-from modules.data_loader import load_testcases, save_testcases
-from modules.test_runner import update_status, get_suite_cases
-from modules.visualization import plot_status_distribution, plot_suite_progress
-from modules.report_generator import export_pdf
 
-st.set_page_config(page_title="MLFF Tolling SAT Test Manager", layout="wide")
+# Define the expected headers
+EXPECTED_HEADERS = [f"AT_RSS_{i}-{j}" for i in range(31, 56) for j in range(1, 11)]
 
-st.sidebar.title("📂 Navigation")
-page = st.sidebar.radio("Go to", ["Upload Data", "Test Execution", "Dashboard", "Report"])
+st.title("📊 Test Case Analyzer")
 
-if "df" not in st.session_state:
-    st.session_state.df = load_testcases("data/sample_testcases.csv")
+uploaded_file = st.file_uploader("Upload your CSV", type=["csv"])
 
-df = st.session_state.df
+if uploaded_file:
+    df = pd.read_csv(uploaded_file)
 
-if page == "Upload Data":
-    st.title("📂 Upload Test Cases")
-    file = st.file_uploader("Upload CSV", type="csv")
-    if file:
-        st.session_state.df = pd.read_csv(file)
-        st.success("Test cases uploaded!")
+    # Find missing columns
+    missing_cols = [col for col in EXPECTED_HEADERS if col not in df.columns]
 
-elif page == "Test Execution":
-    st.title("🧾 Test Execution")
-    suite = st.selectbox("Select Test Suite", df["Suite"].unique())
-    cases = get_suite_cases(df, suite)
-    case_id = st.selectbox("Choose Test Case", cases["ID"])
-    case = cases[cases["ID"] == case_id].iloc[0]
-    st.write("**Title:**", case["Title"])
-    st.write("**Description:**", case["Description"])
-    st.write("**Expected Result:**", case["ExpectedResult"])
-    status = st.radio("Update Status", ["Pending", "Pass", "Fail"])
-    comments = st.text_area("Comments")
-    if st.button("Save Result"):
-        st.session_state.df = update_status(df, case_id, status, comments)
-        save_testcases(st.session_state.df, "data/sample_testcases.csv")
-        st.success("Result saved!")
+    # Auto-add missing columns with default values
+    for col in missing_cols:
+        df[col] = "N/A"   # could also use 0 or "MISSING"
 
-elif page == "Dashboard":
-    st.title("📊 Dashboard")
-    st.plotly_chart(plot_status_distribution(df))
-    st.plotly_chart(plot_suite_progress(df))
+    st.success(f"✅ CSV loaded with {len(missing_cols)} auto-added columns")
 
-elif page == "Report":
-    st.title("📑 Generate Report")
-    if st.button("Export PDF"):
-        export_pdf(df, "data/SAT_Test_Report.pdf")
-        st.success("Report exported! (check data folder)")
+    # Show first 10 rows
+    st.dataframe(df.head(10))
+
+    # Allow download of cleaned file
+    st.download_button(
+        "Download Cleaned CSV",
+        df.to_csv(index=False).encode("utf-8"),
+        file_name="cleaned_testcases.csv",
+        mime="text/csv",
+    )
 
